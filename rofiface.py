@@ -1,4 +1,4 @@
-#!/usr/bin/python -u
+#!/usr/bin/python3 -u
 
 import json
 import sys
@@ -11,11 +11,11 @@ from xml.sax.saxutils import escape
 ### JSON I/O for Firefox FFI from Mozilla websites
 # Read a message from stdin and decode it.
 def get_message():
-    raw_length = sys.stdin.read(4)
+    raw_length = sys.stdin.buffer.read(4)
     if not raw_length:
         sys.exit(0)
     message_length = struct.unpack('=I', raw_length)[0]
-    message = sys.stdin.read(message_length)
+    message = sys.stdin.buffer.read(message_length)
     return json.loads(message)
 
 
@@ -28,7 +28,7 @@ def encode_message(message_content):
 
 # Send an encoded message to stdout.
 def send_message(encoded_message):
-    sys.stdout.write(encoded_message['length'])
+    sys.stdout.buffer.write(encoded_message['length'])
     sys.stdout.write(encoded_message['content'])
     sys.stdout.flush()
 
@@ -54,7 +54,7 @@ while True:
     out,err = rofi.communicate(u''.join(map(lambda tab:u"<span color='%s'>(%d)</span>\t%s <span alpha='50%%'>%s</span>\n"%(get_color(tab['window']),tab['window'],escape(tab['title']),escape(tab['url'])),message['tabs'])).encode('utf-8'))
     
     # if anything was selected, tell browser side to switch to that tab
-    if out != "":
+    if out != b'':
         send_message(encode_message(message['tabs'][int(out)]['id']))
 
 
