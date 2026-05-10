@@ -1,11 +1,23 @@
-var port = browser.runtime.connectNative("rofi_interface");
+var port = null;
 
-port.onMessage.addListener((response) => {
-    console.log("Received: " + response);
-    if(response != "") {
-        browser.tabs.get(parseInt(response)).then(raiseTab, onError);
-    }
-});
+function connectBackend() {
+    port = browser.runtime.connectNative("rofi_interface");
+
+    port.onMessage.addListener((response) => {
+        console.log("Received: " + response);
+        if(response != "") {
+            browser.tabs.get(parseInt(response)).then(raiseTab, onError);
+        }
+    });
+
+    port.onDisconnect.addListener((p) => {
+        console.log("Backend disconnected!");
+        port = null;
+        setTimeout(connectBackend, 1000); // retry in 1s
+    });
+}
+
+connectBackend();
 
 function onError(error) {
     console.log(error);
@@ -21,7 +33,9 @@ function sendTabList(tabs) {
         var activetab = tabs.findIndex(function (t) { return (t.active && win.id == t.windowId); });
         console.log(activetab);
         var tabdata = tabs.map(function (t) { return { id: t.id, window: t.windowId, title: t.title, url: t.url } });
-        port.postMessage({ active: activetab, tabs: tabdata });
+        if(port) {
+            port.postMessage({ active: activetab, tabs: tabdata });
+        }
     });
 }
 

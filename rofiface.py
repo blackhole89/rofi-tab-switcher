@@ -7,16 +7,26 @@ import subprocess
 # import pprint
 import random
 from xml.sax.saxutils import escape
+from collections import defaultdict
+
+import logging
+logger = logging.getLogger(__name__)
+logging.basicConfig(filename='myapp.log', level=logging.INFO)
+import pprint
 
 ### JSON I/O for Firefox FFI from Mozilla websites
 # Read a message from stdin and decode it.
 def get_message():
+    # logger.info("get message")
     raw_length = sys.stdin.buffer.read(4)
     if not raw_length:
         sys.exit(0)
     message_length = struct.unpack('=I', raw_length)[0]
+    # logger.info("get %d"%(message_length))
     message = sys.stdin.buffer.read(message_length)
-    return json.loads(message)
+    # logger.info(message)
+    tabs = json.loads(message)
+    return tabs
 
 
 # Encode a message for transmission, given its content.
@@ -45,16 +55,24 @@ def get_color(id):
         colormap[id] = random.choice(colors)
     return colormap[id]
 
+def format_tab(tab):
+    return (u"<span color='%s'>(%d)</span>\t%s <span alpha='50%%'>%s</span>\n"
+            % (get_color(tab.get('window',-1)),
+               tab.get('window',-1),
+               escape(tab.get('title','<untitled>')),
+               escape(tab.get('url','<undefined>')))
+           )
+
 ### main loop
 while True:
     message = get_message()
     
     # spawn rofi and get selection
     rofi = subprocess.Popen("rofi -dmenu -i -scroll-method 1 -format i -p 'Go to tab' -markup-rows -no-custom -selected-row %d|head -n 1"%(message['active']), shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-    out,err = rofi.communicate(u''.join(map(lambda tab:u"<span color='%s'>(%d)</span>\t%s <span alpha='50%%'>%s</span>\n"%(get_color(tab['window']),tab['window'],escape(tab['title']),escape(tab['url'])),message['tabs'])).encode('utf-8'))
-    
+
+    out,err = rofi.communicate(u''.join(map(format_tab,message['tabs'])).encode('utf-8'))
+
     # if anything was selected, tell browser side to switch to that tab
     if out != b'':
         send_message(encode_message(message['tabs'][int(out)]['id']))
-
-
+            
