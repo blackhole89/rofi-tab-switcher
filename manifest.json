@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "rofi tab switcher",
-  "version": "1.0",
+  "version": "1.1",
 
   "description": "Switch between tabs using rofi.",
 
