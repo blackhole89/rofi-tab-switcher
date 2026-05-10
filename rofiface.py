@@ -12,7 +12,6 @@ from collections import defaultdict
 import logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(filename='myapp.log', level=logging.INFO)
-import pprint
 
 ### JSON I/O for Firefox FFI from Mozilla websites
 # Read a message from stdin and decode it.
